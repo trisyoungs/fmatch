@@ -1,0 +1,101 @@
+# Embedded Atom Model for Aluminium (Mei form)
+
+# Define Aluminium species
+species "Aluminium"
+	# Number of molecules in this species
+	nmols 256
+	# Atoms in species, in the order they appear in the actual molecule
+	atom Al
+	# Masses of atoms in the species, in g/mol (only used for MD runs)
+	masses 26.9815
+end
+
+# Forcefield definitions which are to remain fixed
+fixed
+end
+
+# Forcefield definitions which are to be fitted
+# Note: Angle/torsion angle parameters must be given in radians
+fit
+	# Energetic values are in Ev
+	vdw Al Al eam Ec 3.39 phi0 0.1318 r0 2.8638 alpha 4.60 beta 7.10 gamma 7.34759 delta 7.35
+	vdw Al Al eam c0 0.64085 c1 -6.83764 c2 26.75616 c3 -47.16495 c4 36.18925 c5 -8.60834
+end
+
+configurations
+	# Define unit cell in configurations here
+	cubic 16.2
+	#orthorhombic 12.0 16.0 45.0
+	#parallelepiped 9.0 9.0 9.0 90.0 120.0 90.0
+	# The forcemultiplier is a factor applied to all forces read in from the file specified.
+	# It should be used to convert forces in the file to the units of the supplied forcefield.
+	# E.G. for DL_POLY units (10 J/mol) use a forceMultiplier of 0.01 to get into kJ/mol
+	forcemultiplier 1.0
+	file "al256crystal.xyzf"
+end
+
+# Definition of system and some optimisation parameters
+system
+	# Request Ewald sum (otherwise no electrostatics are computed)
+	#ewald 0.33068 6 6 6
+	# Default energy units for Ewald calculation are kJ/mol - use econvert (a multiplier) to convert it to match input FF units
+	#econvert 1.0
+	# Set cutoff distance for vdW and real-space Ewald contributions
+	cutoff 9.0
+	# Set random seed to specific value (otherwise one based on the system time is used)
+	#seed 13155762030
+	# Specify frame range to use
+	frames 1 1 1
+	# Turn on equalisation of parameter length scales at various points in code
+	#equalise
+	# Flag that the best parameters found for a configuration set should be carried over to be the starting point of the next run
+	#retain
+	# Multiplication factor to apply to limit penalties
+	penalty 1.0e7
+	# Temperature schedule to employ (linear,hilly)
+	schedule linear
+	# Set threshold cost value (at which point optimisation will be stopped)
+	threshold 0.1
+	# Electronvolts rather than kJ/mol
+	ev
+end
+
+# Definition of per-configuration optimisation strategy
+strategy
+	# Randomise original input values by 0.5 so we can't cheat
+	randomise 0.5
+
+	# Clear the parameter store
+	clear 1
+
+	# Loop for a maximum of 50 iterations
+	loop 50
+		# Select all parameters for optimisation
+		select all
+		# Run a short simulated annealing run
+		anneal2 5 10 1.0 0.03
+		# Short loop now...
+		loop 3
+			# Store the current best forcefield parameters
+			store 1
+			# Predict a new set of parameters based on the last 10 sets in store 1
+			predict 1 10 10
+			# Select parameters 2 and 4 (angle and bond equilibrium lengths in this example)
+			select 2 4
+			# Perform steepest descent minimisation
+			sd 100 0.0001
+			# Select parameters 1 and 3 (angle and bond force constants in this example)
+			select 1 3
+			# Perform steepest descent minimisation
+			sd 100 0.0001
+			# Select parameters 5, 6 and 7 (sigma, epsilon, and q in this example)
+			select 5 6 7
+			# Perform short annealing run
+			anneal2 5 5 1.0 0.01
+		endloop
+		# Print the best parameters obtained so far
+		print best
+	endloop
+
+end
+

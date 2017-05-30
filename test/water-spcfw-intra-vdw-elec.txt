@@ -1,0 +1,58 @@
+# Example (template) datafile input for FM3
+
+# Define simple molecular species (water)
+species "Water"
+	nmols 267
+	atom HW
+	atom OW
+	atom HW
+	bond 1 2
+	bond 2 3
+	angle 1 2 3
+end
+
+# Forcefield definitions which are to remain fixed
+fixed
+	bond HW OW harmonic k 4431.53
+	vdw HW HW lj sigma 0.0   epsilon 0.0
+	charge HW 0.41
+	charge OW dependent
+end
+
+# Forcefield definitions which are to be fitted
+# Note: Angle/torsion angle parameters must be given in radians
+fit
+	bond HW OW harmonic eq 1.012
+	angle HW OW HW harmonic k 317.565 eq 1.976411
+	vdw OW OW lj sigma 3.166 epsilon 0.65
+	combine HW OW
+end
+
+configurations
+	cubic 20.0
+	#orthorhombic 12.0 16.0 45.0
+	#parallelepiped 9.0 9.0 9.0 90.0 120.0 90.0
+	# The forcemultiplier is a factor applied to all forces read in from the file specified.
+	# It should be used to convert forces in the file to the units of the supplied forcefield.
+	# E.G. for DL_POLY units (10 J/mol) use a forcemultiplier of 0.01 to get into kJ/mol
+	forcemultiplier 0.01
+	file "water-spcfw-intra-vdw-elec.xyzf"
+end
+
+# Definition of system and optimisation parameters
+system
+	# Request Ewald sum (otherwise no electrostatics are computed)
+	ewald 0.33068 6 6 6
+	# Default energy units for Ewald calculation are kJ/mol - use econvert (a multiplier) to convert it to match input FF units
+	econvert 1.0
+	# Set cutoff distance for vdW and real-space Ewald contributions
+	cutoff 9.0
+	# Set frame range/skip/stacksize
+	frames 1 1 1
+end
+
+# Strategy
+strategy
+	randomise 1.0
+	sd
+end
